@@ -1,4 +1,5 @@
 
+import glob
 import numpy as np
 from pickle import load, dump
 from os.path import exists
@@ -58,10 +59,10 @@ class NeuronalNetwork:
     return {'label': label, 'target': label_array, 'training_set': data_f_array / 255 * .99 + 0.01,}
   
   def train_from_file(self, rate, path, limit = 100, write = False):
+    count = 1
     print(f'Training with {limit} sets.')
     with open(path) as fd:
       line = fd.readline()
-      count = 1
       while line and count <= limit:
         training_set = self.prepare_set_from_str(line)
         self.train_network(training_set['training_set'], training_set['target'], rate)
@@ -72,7 +73,9 @@ class NeuronalNetwork:
         weights = [self.weights_ih, self.weights_ho]
         dump(weights, fd)
         print('Weights matrices writen to training file in the training folder.')
-        
+    count -= 1
+    print(f'  Finished training on {count} sets.')
+
   def test_from_file(self, path, limit = 100):
     score = 0
     count = 1
@@ -94,6 +97,29 @@ class NeuronalNetwork:
     print(f'Accuracy after {count} tests: {accuracy}%')
     return accuracy
 
-net = NeuronalNetwork(784, 160, 10, from_file = True)
-#net.train_from_file(.3, path = 'csv_sets/mnist_train.csv', limit = 55000, write = True)
+  def test_custom_data(self, path):
+    for file in glob.glob(path +'*.png'):
+      print('\n', file)
+      with open(file, 'rb') as fd:
+        array = bytearray(fd.read())
+        print('Len:', len(array))
+        for byte in array:
+          print(int(byte), end = ' ')
+
+epochs = 5
+from_file = False
+net = NeuronalNetwork(784, 300, 10, from_file)
+'''
+for epoch in range(0, epochs - 1):
+  print('Training epoch:', epoch + 1)
+  net.train_from_file(.22, path = 'csv_sets/mnist_train.csv', limit = 60000, write = False)
+  net.test_from_file(path = 'csv_sets/mnist_test.csv', limit = 10000)
+
+print('Final epoch')
+net.train_from_file(.22, path = 'csv_sets/mnist_train.csv', limit = 60000, write = True)
+'''
 net.test_from_file(path = 'csv_sets/mnist_test.csv', limit = 10000)
+
+# Current accuracy: 97.1%
+
+#net.test_custom_data('my_data/');
